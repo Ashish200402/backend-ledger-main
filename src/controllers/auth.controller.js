@@ -1,7 +1,9 @@
 const userModel = require("../models/user.model")
 const jwt = require("jsonwebtoken")
 const emailService = require("../services/email.service")
+const emailOutboxService = require("../services/emailOutbox.service")
 const tokenBlackListModel = require("../models/blackList.model")
+const mongoose = require("mongoose")
 
 /**
 * - user register controller
@@ -21,9 +23,20 @@ async function userRegisterController(req, res) {
         })
     }
 
-    const user = await userModel.create({
-        email, password, name
-    })
+    const session = await mongoose.startSession()
+    let user
+    try {
+        await session.withTransaction(async () => {
+            [user] = await userModel.create([ {
+                email,
+                password,
+                name
+            } ], { session, ordered: true })
+            await emailOutboxService.queueRegistrationEmail(user, session)
+        })
+    } finally {
+        await session.endSession()
+    }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
@@ -35,10 +48,12 @@ async function userRegisterController(req, res) {
             email: user.email,
             name: user.name
         },
-        token
+        token,
+        emailNotification: {
+            status: "QUEUED"
+        }
     })
 
-    await emailService.sendRegistrationEmail(user.email, user.name)
 }
 
 /**
@@ -80,6 +95,30 @@ async function userLoginController(req, res) {
 
 }
 
+function getUserEmailStatusController(req, res) {
+    const configuration = emailService.getEmailConfiguration()
+    return res.status(200).json({
+        ...configuration,
+        address: req.user.email
+    })
+}
+
+async function sendTestEmailController(req, res) {
+    try {
+        await emailService.sendTestEmail(req.user.email, req.user.name)
+        return res.status(200).json({
+            sent: true,
+            message: `Test email sent to ${req.user.email}`
+        })
+    } catch (error) {
+        console.error("Test email could not be sent:", error.message)
+        return res.status(503).json({
+            sent: false,
+            message: error.message
+        })
+    }
+}
+
 
 /**
  * - User Logout Controller
@@ -112,5 +151,7 @@ async function userLogoutController(req, res) {
 module.exports = {
     userRegisterController,
     userLoginController,
+    getUserEmailStatusController,
+    sendTestEmailController,
     userLogoutController
 }

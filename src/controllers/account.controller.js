@@ -1,17 +1,37 @@
 const accountModel = require("../models/account.model");
+const systemFundingService = require("../services/system-funding.service")
 
 
-async function createAccountController(req, res) {
+async function createAccountController(req, res, next) {
+    const startingBalance = req.body.startingBalance ?? 0
 
-    const user = req.user;
+    if (typeof startingBalance !== "number" || !Number.isFinite(startingBalance) || startingBalance < 0) {
+        return res.status(400).json({
+            message: "Starting balance must be a non-negative number"
+        })
+    }
 
-    const account = await accountModel.create({
-        user: user._id
-    })
+    if (Math.abs(startingBalance * 100 - Math.round(startingBalance * 100)) > 1e-8) {
+        return res.status(400).json({
+            message: "Starting balance cannot have more than two decimal places"
+        })
+    }
 
-    res.status(201).json({
-        account
-    })
+    try {
+        const account = await systemFundingService.createFundedAccount(req.user, startingBalance)
+
+        return res.status(201).json({
+            account,
+            startingBalance
+        })
+    } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                message: error.message
+            })
+        }
+        return next(error)
+    }
 
 }
 

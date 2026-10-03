@@ -8,6 +8,17 @@ const accountSchema = new mongoose.Schema({
         required: [ true, "Account must be associated with a user" ],
         index: true
     },
+    kind: {
+        type: String,
+        enum: [ "USER", "SYSTEM_FUNDING", "SYSTEM_CAPITAL" ],
+        default: "USER",
+        immutable: true
+    },
+    fundingRevision: {
+        type: Number,
+        default: 0,
+        select: false
+    },
     status: {
         type: String,
         enum: {

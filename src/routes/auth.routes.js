@@ -1,8 +1,11 @@
 const express = require("express")
 const authController = require("../controllers/auth.controller")
+const authMiddleware = require("../middleware/auth.middleware")
 
 const router = express.Router()
 
+router.get("/email/status", authMiddleware.authMiddleware, authController.getUserEmailStatusController)
+router.post("/email/test", authMiddleware.authMiddleware, authController.sendTestEmailController)
 
 /* POST /api/auth/register */
 router.post("/register", authController.userRegisterController)

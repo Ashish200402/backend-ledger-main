@@ -4,6 +4,9 @@ const transactionController = require("../controllers/transaction.controller")
 
 const transactionRoutes = Router();
 
+transactionRoutes.post("/:transactionId/email/retry", authMiddleware.authMiddleware, transactionController.retryTransactionEmails)
+transactionRoutes.get("/", authMiddleware.authMiddleware, transactionController.getTransactionHistory)
+
 /**
  * - POST /api/transactions/
  * - Create a new transaction
