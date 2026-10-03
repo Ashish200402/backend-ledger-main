@@ -5,6 +5,15 @@ const emailOutboxService = require("../services/emailOutbox.service")
 const tokenBlackListModel = require("../models/blackList.model")
 const mongoose = require("mongoose")
 
+function setAuthCookie(res, token) {
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3 * 24 * 60 * 60 * 1000
+    })
+}
+
 /**
 * - user register controller
 * - POST /api/auth/register
@@ -40,7 +49,7 @@ async function userRegisterController(req, res) {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie("token", token)
+    setAuthCookie(res, token)
 
     res.status(201).json({
         user: {
@@ -82,7 +91,7 @@ async function userLoginController(req, res) {
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie("token", token)
+    setAuthCookie(res, token)
 
     res.status(200).json({
         user: {
@@ -139,7 +148,11 @@ async function userLogoutController(req, res) {
         token: token
     })
 
-    res.clearCookie("token")
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    })
 
     res.status(200).json({
         message: "User logged out successfully"

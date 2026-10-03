@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npx nodemon server.js",
     "start": "node server.js",
+    "start:render": "node scripts/seed-system-funding.js && node server.js",
     "seed:system": "node scripts/seed-system-funding.js"
   },
   "keywords": [],

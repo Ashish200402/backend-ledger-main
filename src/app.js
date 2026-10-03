@@ -1,15 +1,26 @@
 const express = require("express")
 const cookieParser = require("cookie-parser")
 const path = require("path")
+const mongoose = require("mongoose")
 
 
 
 const app = express()
 
+if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1)
+}
 
 app.use(express.json())
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, "../public")))
+app.get("/health", (req, res) => {
+    const isDatabaseReady = mongoose.connection.readyState === 1
+    return res.status(isDatabaseReady ? 200 : 503).json({
+        status: isDatabaseReady ? "ok" : "unavailable",
+        database: isDatabaseReady ? "connected" : "disconnected"
+    })
+})
 
 /**
  * - Routes required

@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: backend-ledger
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm run start:render
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SYSTEM_INITIAL_RESERVE
+        value: "50000"
+      - key: SYSTEM_USER_EMAIL
+        value: system@backend-ledger.local
